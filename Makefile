@@ -1,7 +1,7 @@
 BINARY = incident-pilot
 
 .PHONY: all test tidy build clean \
-	run-orchestrator \
+	run-orchestrator build-orchestrator \
 	run-monitoring run-deployments run-logs run-knowledge run-notifications \
 	build-monitoring build-deployments build-logs build-knowledge build-notifications
 
@@ -17,8 +17,12 @@ tidy:
 	go mod tidy
 
 run-orchestrator:
-	@echo "Starting orchestrator..."
-	go run ./apps/orchestrator
+	@echo "Starting orchestrator (requires MCP servers on :8081-:8085)..."
+	go run ./apps/orchestrator/cmd/orchestrator
+
+build-orchestrator:
+	@echo "Building orchestrator..."
+	go build -o orchestrator ./apps/orchestrator/cmd/orchestrator
 
 build-monitoring:
 	@echo "Building monitoring MCP service..."
@@ -62,4 +66,4 @@ run-notifications:
 
 clean:
 	@echo "Resetting workspace to a clean state..."
-	rm -f monitoring-server deployments-server logs-server knowledge-server notifications-server
+	rm -f monitoring-server deployments-server logs-server knowledge-server notifications-server orchestrator
