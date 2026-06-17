@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/patharetush/incident-pilot/servers/monitoring/config"
+	"github.com/patharetush/incident-pilot/shared/config"
 	"github.com/patharetush/incident-pilot/shared/logging"
 )
 
-// Runner serves the MCP server over the configured transport.
+// Runner serves an MCP server over the configured transport.
 type Runner struct {
 	cfg    *config.Config
 	server *mcp.Server
@@ -32,7 +32,10 @@ func (r *Runner) Run(ctx context.Context) error {
 }
 
 func (r *Runner) runStdio(ctx context.Context) error {
-	logging.L().Info().Str("transport", config.TransportStdio).Msg("starting monitoring MCP server")
+	logging.L().Info().
+		Str("server", r.cfg.Server.Name).
+		Str("transport", config.TransportStdio).
+		Msg("starting MCP server")
 	return r.server.Run(ctx, &mcp.StdioTransport{})
 }
 
@@ -44,7 +47,7 @@ func (r *Runner) runHTTP(ctx context.Context) error {
 	var handler http.Handler = mcpHandler
 	if r.cfg.Auth.Enabled {
 		handler = wrapAuth(handler, r.cfg.Auth)
-		logging.L().Info().Msg("authorization middleware enabled")
+		logging.L().Info().Str("server", r.cfg.Server.Name).Msg("authorization middleware enabled")
 	}
 
 	httpServer := &http.Server{
@@ -53,16 +56,17 @@ func (r *Runner) runHTTP(ctx context.Context) error {
 	}
 
 	logging.L().Info().
+		Str("server", r.cfg.Server.Name).
 		Str("transport", config.TransportHTTP).
 		Str("addr", r.cfg.Transport.HTTPAddr).
-		Msg("starting monitoring MCP server")
+		Msg("starting MCP server")
 
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), r.cfg.Transport.ShutdownTimeout)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			logging.L().Error().Err(err).Msg("HTTP server shutdown failed")
+			logging.L().Error().Err(err).Str("server", r.cfg.Server.Name).Msg("HTTP server shutdown failed")
 		}
 	}()
 
@@ -72,7 +76,6 @@ func (r *Runner) runHTTP(ctx context.Context) error {
 	return nil
 }
 
-// wrapAuth is a placeholder for future bearer-token or OAuth middleware.
 func wrapAuth(next http.Handler, authCfg config.AuthConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if authCfg.APIKey != "" {

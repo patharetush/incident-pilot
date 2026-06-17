@@ -19,7 +19,8 @@ The composition root wires small focused packages:
 - `repository` for data access contracts and implementations.
 - `service` for business logic and validations.
 - `tools`, `resources`, `prompts` for MCP feature surfaces.
-- shared transport runner in `shared/transport` to avoid duplication across future servers.
+- shared config in `shared/config` for flags, env vars, and auth settings.
+- shared transport runner in `shared/transport` to avoid duplication across MCP servers.
 
 ## Package layout
 
@@ -48,11 +49,13 @@ servers/monitoring/
     └── services.go
 ```
 
-Common runtime transport (HTTP/stdio + auth wrapper hook):
+Shared runtime (used by all MCP servers):
 
 ```text
-shared/transport/
-└── runner.go
+shared/
+├── config/config.go      # flags, env vars, auth config
+├── transport/runner.go   # HTTP/stdio + auth middleware hook
+└── logging/log.go        # structured logging
 ```
 
 ## Layer responsibilities
